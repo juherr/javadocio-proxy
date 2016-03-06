@@ -16,12 +16,28 @@ public class JavadocIoProxy {
     public static void main(String... args) throws IOException {
         port(getHerokuAssignedPort());
 
+        get("/", (request, response) -> {
+            response.redirect("http://www.javadoc.io/");
+            return "";
+        });
         get("/*", (request, response) -> {
             String url = request.pathInfo();
             int position = url.indexOf("/", 1); // skip root
+            if (position == -1) {
+                response.redirect("http://www.javadoc.io/");
+                return "";
+            }
             int splitAt = url.indexOf("/", position + 1); // skip groupId and artifactId separator
+            if (splitAt == -1) {
+                response.redirect(JAVADOC_IO_INDEX_URL + url);
+                return "";
+            }
             String project = url.substring(0, splitAt);
             String pageUrl = url.substring(splitAt);
+            if ("/".equals(pageUrl)) {
+                response.redirect(JAVADOC_IO_INDEX_URL + url);
+                return "";
+            }
             try {
                 response.redirect(getUrl(request.userAgent(), project, pageUrl), HttpURLConnection.HTTP_SEE_OTHER);
             } catch (IllegalStateException ex) {
